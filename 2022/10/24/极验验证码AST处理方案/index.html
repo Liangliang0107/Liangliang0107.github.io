@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"liangliang0107.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":true,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="极验验证码JS混淆处理方案 1.  基础工作可以看到前面5个节点都是用于处理混淆的函数 我们可以将这几个节点获取出来 代码入下： let NewAst &#x3D; parser.parse(&quot;&quot;); &#x2F;&#x2F; 新建一个AST对象 用于存放代码 &#x2F;&#x2F; 这里是由于NodeJs执行流程是从上往下的 如果按原来的顺序会报错 先将第5个节点获取出来 放在最前面 NewAst.program.body.push(ast.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="极验验证码AST处理方案">
+<meta property="og:url" content="https://liangliang0107.github.io/2022/10/24/%E6%9E%81%E9%AA%8C%E9%AA%8C%E8%AF%81%E7%A0%81AST%E5%A4%84%E7%90%86%E6%96%B9%E6%A1%88/index.html">
+<meta property="og:site_name" content="小亮的个人博客">
+<meta property="og:description" content="极验验证码JS混淆处理方案 1.  基础工作可以看到前面5个节点都是用于处理混淆的函数 我们可以将这几个节点获取出来 代码入下： let NewAst &#x3D; parser.parse(&quot;&quot;); &#x2F;&#x2F; 新建一个AST对象 用于存放代码 &#x2F;&#x2F; 这里是由于NodeJs执行流程是从上往下的 如果按原来的顺序会报错 先将第5个节点获取出来 放在最前面 NewAst.program.body.push(ast.">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://liangliang0107.github.io/image%5Cimage-20221024075850255.png">
+<meta property="og:image" content="https://liangliang0107.github.io/image%5Cimage-20221024080654379.png">
+<meta property="og:image" content="https://liangliang0107.github.io/image%5Cimage-20221024085940813.png">
+<meta property="article:published_time" content="2022-10-23T23:42:50.000Z">
+<meta property="article:modified_time" content="2022-10-24T01:17:28.578Z">
+<meta property="article:author" content="liangliang">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://liangliang0107.github.io/image%5Cimage-20221024075850255.png">
+
+<link rel="canonical" href="https://liangliang0107.github.io/2022/10/24/%E6%9E%81%E9%AA%8C%E9%AA%8C%E8%AF%81%E7%A0%81AST%E5%A4%84%E7%90%86%E6%96%B9%E6%A1%88/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>极验验证码AST处理方案 | 小亮的个人博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+  
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">小亮的个人博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://liangliang0107.github.io/2022/10/24/%E6%9E%81%E9%AA%8C%E9%AA%8C%E8%AF%81%E7%A0%81AST%E5%A4%84%E7%90%86%E6%96%B9%E6%A1%88/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="liangliang">
+      <meta itemprop="description" content="liangliang个人站，主要涉及前端知识共享、实践教程、前沿技术共同学习等方面">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="小亮的个人博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          极验验证码AST处理方案
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2022-10-24 07:42:50 / 修改时间：09:17:28" itemprop="dateCreated datePublished" datetime="2022-10-24T07:42:50+08:00">2022-10-24</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="极验验证码JS混淆处理方案"><a href="#极验验证码JS混淆处理方案" class="headerlink" title="极验验证码JS混淆处理方案"></a>极验验证码JS混淆处理方案</h1><p><img src="/image%5Cimage-20221024075850255.png" alt="image-20221024075850255"></p>
+<h2 id="1-基础工作"><a href="#1-基础工作" class="headerlink" title="1.  基础工作"></a>1.  基础工作</h2><p><strong>可以看到前面5个节点都是用于处理混淆的函数 我们可以将这几个节点获取出来 代码入下：</strong></p>
+<pre class="line-numbers language-javascript" data-language="javascript"><code class="language-javascript"><span class="token keyword">let</span> NewAst <span class="token operator">=</span> parser<span class="token punctuation">.</span><span class="token function">parse</span><span class="token punctuation">(</span><span class="token string">""</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// 新建一个AST对象 用于存放代码</span>
+<span class="token comment">// 这里是由于NodeJs执行流程是从上往下的 如果按原来的顺序会报错 先将第5个节点获取出来 放在最前面</span>
+NewAst<span class="token punctuation">.</span>program<span class="token punctuation">.</span>body<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span>ast<span class="token punctuation">.</span>program<span class="token punctuation">.</span>body<span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment">// 这里按顺序就好了</span>
+NewAst<span class="token punctuation">.</span>program<span class="token punctuation">.</span>body<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span>ast<span class="token punctuation">.</span>program<span class="token punctuation">.</span>body<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+NewAst<span class="token punctuation">.</span>program<span class="token punctuation">.</span>body<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span>ast<span class="token punctuation">.</span>program<span class="token punctuation">.</span>body<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+NewAst<span class="token punctuation">.</span>program<span class="token punctuation">.</span>body<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span>ast<span class="token punctuation">.</span>program<span class="token punctuation">.</span>body<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+NewAst<span class="token punctuation">.</span>program<span class="token punctuation">.</span>body<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span>ast<span class="token punctuation">.</span>program<span class="token punctuation">.</span>body<span class="token punctuation">[</span><span class="token number">3</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token function">eval</span><span class="token punctuation">(</span><span class="token function">generator</span><span class="token punctuation">(</span>NewAst<span class="token punctuation">)</span><span class="token punctuation">.</span>code<span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">// 执行一下我们获取的代码</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="2-还原字符串混淆"><a href="#2-还原字符串混淆" class="headerlink" title="2. 还原字符串混淆"></a>2. 还原字符串混淆</h2><p><img src="/image%5Cimage-20221024080654379.png" alt="image-20221024080654379"></p>
+<p><strong>通过AST 分析网站可以发现 有很多 <code>\u00</code> 开头的字符串 我们将他还原 代码如下：</strong></p>
+<pre class="line-numbers language-javascript" data-language="javascript"><code class="language-javascript"><span class="token literal-property property">StringLiteral</span><span class="token operator">:</span> <span class="token punctuation">&#123;</span>  <span class="token comment">// 遍历StringLiteral直接将 extra节点删除即可</span>
+        <span class="token function">enter</span><span class="token punctuation">(</span><span class="token parameter">path</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+            <span class="token keyword">delete</span> path<span class="token punctuation">.</span>node<span class="token punctuation">.</span>extra
+        <span class="token punctuation">&#125;</span>
+    <span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="3-还原数组混淆"><a href="#3-还原数组混淆" class="headerlink" title="3. 还原数组混淆"></a>3. 还原数组混淆</h2><p><img src="/image%5Cimage-20221024085940813.png" alt="image-20221024085940813"></p>
+<p><strong>除了字符串混淆我们还可以看到很多 使用类似 <code>$_DHDr(92)</code>的函数名称 其实这里就是数组混淆  调用 某个函数（id）获取一串字符串 例：</strong> </p>
+<pre class="line-numbers language-javascript" data-language="javascript"><code class="language-javascript"><span class="token keyword">function</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">var</span> $_DHCy <span class="token operator">=</span> zmSjO<span class="token punctuation">.</span>$_Cs<span class="token punctuation">,</span> $_DHBa <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token string">'$_DHFI'</span><span class="token punctuation">]</span><span class="token punctuation">.</span><span class="token function">concat</span><span class="token punctuation">(</span>$_DHCy<span class="token punctuation">)</span><span class="token punctuation">,</span> $_DHDr <span class="token operator">=</span> $_DHBa<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+    $_DHBa<span class="token punctuation">.</span><span class="token function">shift</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">var</span> $_DHET <span class="token operator">=</span> $_DHBa<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+    <span class="token keyword">this</span><span class="token punctuation">[</span><span class="token function">$_DHCy</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">l</span><span class="token punctuation">[</span><span class="token punctuation">(</span><span class="token function">$_DHDr</span><span class="token punctuation">(</span><span class="token number">92</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token keyword">this</span><span class="token punctuation">[</span><span class="token function">$_DHCy</span><span class="token punctuation">(</span><span class="token number">9</span><span class="token punctuation">)</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><strong>通过分析多个函数 可以发现他们的 函数结构都有相同的地方</strong></p>
+<pre class="line-numbers language-javascript" data-language="javascript"><code class="language-javascript"><span class="token keyword">function</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">var</span> $_DHCy <span class="token operator">=</span> zmSjO<span class="token punctuation">.</span>$_Cs<span class="token punctuation">,</span> $_DHBa <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token string">'$_DHFI'</span><span class="token punctuation">]</span><span class="token punctuation">.</span><span class="token function">concat</span><span class="token punctuation">(</span>$_DHCy<span class="token punctuation">)</span><span class="token punctuation">,</span> $_DHDr <span class="token operator">=</span> $_DHBa<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+    $_DHBa<span class="token punctuation">.</span><span class="token function">shift</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">var</span> $_DHET <span class="token operator">=</span> $_DHBa<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+    <span class="token keyword">this</span><span class="token punctuation">[</span><span class="token function">$_DHCy</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">l</span><span class="token punctuation">[</span><span class="token punctuation">(</span><span class="token function">$_DHDr</span><span class="token punctuation">(</span><span class="token number">92</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token keyword">this</span><span class="token punctuation">[</span><span class="token function">$_DHCy</span><span class="token punctuation">(</span><span class="token number">9</span><span class="token punctuation">)</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span>
+<span class="token keyword">function</span> <span class="token punctuation">(</span><span class="token parameter">e</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">var</span> $_DHHL <span class="token operator">=</span> zmSjO<span class="token punctuation">.</span>$_Cs<span class="token punctuation">,</span> $_DHGK <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token string">'$_DIAt'</span><span class="token punctuation">]</span><span class="token punctuation">.</span><span class="token function">concat</span><span class="token punctuation">(</span>$_DHHL<span class="token punctuation">)</span><span class="token punctuation">,</span> $_DHIT <span class="token operator">=</span> $_DHGK<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+    $_DHGK<span class="token punctuation">.</span><span class="token function">shift</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">var</span> $_DHJN <span class="token operator">=</span> $_DHGK<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+    <span class="token function">$_DHHL</span><span class="token punctuation">(</span><span class="token number">69</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token keyword">typeof</span> e <span class="token operator">&amp;&amp;</span> <span class="token punctuation">(</span>e <span class="token operator">=</span> s<span class="token punctuation">[</span><span class="token function">$_DHHL</span><span class="token punctuation">(</span><span class="token number">22</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">(</span>e<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token keyword">this</span><span class="token punctuation">[</span><span class="token function">$_DHIT</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token function">$_DHIT</span><span class="token punctuation">(</span><span class="token number">95</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">(</span>e<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token keyword">this</span><span class="token punctuation">[</span><span class="token function">$_DHIT</span><span class="token punctuation">(</span><span class="token number">9</span><span class="token punctuation">)</span><span class="token punctuation">]</span> <span class="token operator">+=</span> e<span class="token punctuation">[</span><span class="token function">$_DHHL</span><span class="token punctuation">(</span><span class="token number">14</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><strong>1.都是 <code>FunctionDeclaration</code> 节点</strong></p>
+<p><strong>2. 在Body节点下前三个 节点都是 <code>VariableDeclaration</code> <code>ExpressionStatement</code>  <code>VariableDeclaration</code></strong></p>
+<p><strong>还原代码入下：</strong></p>
+<pre class="line-numbers language-javascript" data-language="javascript"><code class="language-javascript"><span class="token literal-property property">VariableDeclaration</span><span class="token operator">:</span> <span class="token punctuation">&#123;</span>
+    <span class="token function">enter</span><span class="token punctuation">(</span><span class="token parameter">path</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>path<span class="token punctuation">.</span>node<span class="token punctuation">.</span>declarations<span class="token punctuation">.</span>length <span class="token operator">!==</span> <span class="token number">3</span><span class="token punctuation">)</span> <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">generator</span><span class="token punctuation">(</span>path<span class="token punctuation">.</span>node<span class="token punctuation">.</span>declarations<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">.</span>code<span class="token punctuation">.</span><span class="token function">indexOf</span><span class="token punctuation">(</span>DecryptFunName<span class="token punctuation">)</span> <span class="token operator">===</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">let</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> path<span class="token punctuation">.</span>node<span class="token punctuation">.</span>declarations<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+            <span class="token keyword">let</span> Bind <span class="token operator">=</span> path<span class="token punctuation">.</span>scope<span class="token punctuation">.</span><span class="token function">getBinding</span><span class="token punctuation">(</span>path<span class="token punctuation">.</span>node<span class="token punctuation">.</span>declarations<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">.</span>id<span class="token punctuation">.</span>name<span class="token punctuation">)</span>
+            Bind<span class="token punctuation">.</span>referencePaths<span class="token punctuation">.</span><span class="token function">map</span><span class="token punctuation">(</span><span class="token keyword">function</span> <span class="token punctuation">(</span><span class="token parameter">v</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>v<span class="token punctuation">.</span>parentPath<span class="token punctuation">.</span><span class="token function">isCallExpression</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+                    <span class="token operator">&amp;&amp;</span> v<span class="token punctuation">.</span>parent<span class="token punctuation">.</span>arguments<span class="token punctuation">.</span>length <span class="token operator">===</span> <span class="token number">1</span>
+                    <span class="token operator">&amp;&amp;</span> v<span class="token punctuation">.</span>parent<span class="token punctuation">.</span>arguments<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>type <span class="token operator">===</span> <span class="token string">"NumericLiteral"</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+                    <span class="token keyword">let</span> value <span class="token operator">=</span> <span class="token function">eval</span><span class="token punctuation">(</span>DecryptFunName <span class="token operator">+</span> <span class="token string">"("</span> <span class="token operator">+</span> v<span class="token punctuation">.</span>parent<span class="token punctuation">.</span>arguments<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>value<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">")"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    v<span class="token punctuation">.</span>parentPath<span class="token punctuation">.</span><span class="token function">replaceInline</span><span class="token punctuation">(</span>types<span class="token punctuation">.</span><span class="token function">stringLiteral</span><span class="token punctuation">(</span>value<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+                <span class="token punctuation">&#125;</span>
+            <span class="token punctuation">&#125;</span><span class="token punctuation">)</span>
+        <span class="token punctuation">&#125;</span>
+        path<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        path<span class="token punctuation">.</span><span class="token function">getNextSibling</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        path<span class="token punctuation">.</span><span class="token function">getNextSibling</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="4-整体还原流程"><a href="#4-整体还原流程" class="headerlink" title="4. 整体还原流程"></a>4. 整体还原流程</h2><pre class="line-numbers language-javascript" data-language="javascript"><code class="language-javascript"><span class="token keyword">const</span> fs <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"fs"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>   <span class="token comment">// 文件操作</span>
+<span class="token keyword">const</span> parser <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"@babel/parser"</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// JS->AST</span>
+<span class="token keyword">const</span> traverse <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"@babel/traverse"</span><span class="token punctuation">)</span><span class="token punctuation">.</span>default<span class="token punctuation">;</span>  <span class="token comment">// 遍历AST</span>
+<span class="token keyword">const</span> types <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"@babel/types"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> <span class="token punctuation">&#123;</span>assertClassPrivateProperty<span class="token punctuation">&#125;</span> <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"@babel/types"</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// 判断AST 节点类型</span>
+<span class="token keyword">const</span> generator <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"@babel/generator"</span><span class="token punctuation">)</span><span class="token punctuation">.</span>default<span class="token punctuation">;</span>  <span class="token comment">// AST -> JS源码</span>
+
+
+<span class="token keyword">let</span> input_File <span class="token operator">=</span> <span class="token string">"./fullpage.9.1.0.js"</span><span class="token punctuation">,</span> output_File <span class="token operator">=</span> <span class="token string">"de_demo.js"</span><span class="token punctuation">;</span>
+
+<span class="token keyword">let</span> JsCode <span class="token operator">=</span> fs<span class="token punctuation">.</span><span class="token function">readFileSync</span><span class="token punctuation">(</span>input_File<span class="token punctuation">,</span> <span class="token punctuation">&#123;</span><span class="token literal-property property">encoding</span><span class="token operator">:</span> <span class="token string">"utf-8"</span><span class="token punctuation">&#125;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">// 读取文件</span>
+<span class="token keyword">let</span> ast <span class="token operator">=</span> parser<span class="token punctuation">.</span><span class="token function">parse</span><span class="token punctuation">(</span>JsCode<span class="token punctuation">,</span> <span class="token punctuation">&#123;</span><span class="token literal-property property">sourceType</span><span class="token operator">:</span> <span class="token string">'module'</span><span class="token punctuation">&#125;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>   <span class="token comment">// JS 转换成 AST</span>
+<span class="token keyword">let</span> NewAst <span class="token operator">=</span> parser<span class="token punctuation">.</span><span class="token function">parse</span><span class="token punctuation">(</span><span class="token string">""</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+NewAst<span class="token punctuation">.</span>program<span class="token punctuation">.</span>body<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span>ast<span class="token punctuation">.</span>program<span class="token punctuation">.</span>body<span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+NewAst<span class="token punctuation">.</span>program<span class="token punctuation">.</span>body<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span>ast<span class="token punctuation">.</span>program<span class="token punctuation">.</span>body<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+NewAst<span class="token punctuation">.</span>program<span class="token punctuation">.</span>body<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span>ast<span class="token punctuation">.</span>program<span class="token punctuation">.</span>body<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+NewAst<span class="token punctuation">.</span>program<span class="token punctuation">.</span>body<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span>ast<span class="token punctuation">.</span>program<span class="token punctuation">.</span>body<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+NewAst<span class="token punctuation">.</span>program<span class="token punctuation">.</span>body<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span>ast<span class="token punctuation">.</span>program<span class="token punctuation">.</span>body<span class="token punctuation">[</span><span class="token number">3</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token function">eval</span><span class="token punctuation">(</span><span class="token function">generator</span><span class="token punctuation">(</span>NewAst<span class="token punctuation">)</span><span class="token punctuation">.</span>code<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token keyword">let</span> DecryptFunName <span class="token operator">=</span> <span class="token function">generator</span><span class="token punctuation">(</span>NewAst<span class="token punctuation">.</span>program<span class="token punctuation">.</span>body<span class="token punctuation">[</span><span class="token number">3</span><span class="token punctuation">]</span><span class="token punctuation">.</span>expression<span class="token punctuation">.</span>left<span class="token punctuation">)</span><span class="token punctuation">.</span>code
+
+
+<span class="token keyword">let</span> visitor <span class="token operator">=</span> <span class="token punctuation">&#123;</span>
+    <span class="token literal-property property">StringLiteral</span><span class="token operator">:</span> <span class="token punctuation">&#123;</span>
+        <span class="token function">enter</span><span class="token punctuation">(</span><span class="token parameter">path</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+            <span class="token keyword">delete</span> path<span class="token punctuation">.</span>node<span class="token punctuation">.</span>extra
+        <span class="token punctuation">&#125;</span>
+    <span class="token punctuation">&#125;</span><span class="token punctuation">,</span>
+    <span class="token literal-property property">VariableDeclaration</span><span class="token operator">:</span> <span class="token punctuation">&#123;</span>
+        <span class="token function">enter</span><span class="token punctuation">(</span><span class="token parameter">path</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>path<span class="token punctuation">.</span>node<span class="token punctuation">.</span>declarations<span class="token punctuation">.</span>length <span class="token operator">!==</span> <span class="token number">3</span><span class="token punctuation">)</span> <span class="token keyword">return</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">generator</span><span class="token punctuation">(</span>path<span class="token punctuation">.</span>node<span class="token punctuation">.</span>declarations<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">.</span>code<span class="token punctuation">.</span><span class="token function">indexOf</span><span class="token punctuation">(</span>DecryptFunName<span class="token punctuation">)</span> <span class="token operator">===</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token keyword">return</span><span class="token punctuation">;</span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">let</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> path<span class="token punctuation">.</span>node<span class="token punctuation">.</span>declarations<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+                <span class="token keyword">let</span> Bind <span class="token operator">=</span> path<span class="token punctuation">.</span>scope<span class="token punctuation">.</span><span class="token function">getBinding</span><span class="token punctuation">(</span>path<span class="token punctuation">.</span>node<span class="token punctuation">.</span>declarations<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">.</span>id<span class="token punctuation">.</span>name<span class="token punctuation">)</span>
+                Bind<span class="token punctuation">.</span>referencePaths<span class="token punctuation">.</span><span class="token function">map</span><span class="token punctuation">(</span><span class="token keyword">function</span> <span class="token punctuation">(</span><span class="token parameter">v</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+                    <span class="token keyword">if</span> <span class="token punctuation">(</span>v<span class="token punctuation">.</span>parentPath<span class="token punctuation">.</span><span class="token function">isCallExpression</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+                        <span class="token operator">&amp;&amp;</span> v<span class="token punctuation">.</span>parent<span class="token punctuation">.</span>arguments<span class="token punctuation">.</span>length <span class="token operator">===</span> <span class="token number">1</span>
+                        <span class="token operator">&amp;&amp;</span> v<span class="token punctuation">.</span>parent<span class="token punctuation">.</span>arguments<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>type <span class="token operator">===</span> <span class="token string">"NumericLiteral"</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+                        <span class="token keyword">let</span> value <span class="token operator">=</span> <span class="token function">eval</span><span class="token punctuation">(</span>DecryptFunName <span class="token operator">+</span> <span class="token string">"("</span> <span class="token operator">+</span> v<span class="token punctuation">.</span>parent<span class="token punctuation">.</span>arguments<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>value<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">")"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        v<span class="token punctuation">.</span>parentPath<span class="token punctuation">.</span><span class="token function">replaceInline</span><span class="token punctuation">(</span>types<span class="token punctuation">.</span><span class="token function">stringLiteral</span><span class="token punctuation">(</span>value<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+                    <span class="token punctuation">&#125;</span>
+                <span class="token punctuation">&#125;</span><span class="token punctuation">)</span>
+            <span class="token punctuation">&#125;</span>
+            path<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            path<span class="token punctuation">.</span><span class="token function">getNextSibling</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+            path<span class="token punctuation">.</span><span class="token function">getNextSibling</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+        <span class="token punctuation">&#125;</span>
+    <span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span>
+
+ast<span class="token punctuation">.</span>program<span class="token punctuation">.</span>body<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>
+
+<span class="token function">traverse</span><span class="token punctuation">(</span>ast<span class="token punctuation">,</span> visitor<span class="token punctuation">)</span>
+
+<span class="token keyword">let</span> Code <span class="token operator">=</span> <span class="token function">generator</span><span class="token punctuation">(</span>ast<span class="token punctuation">,</span>
+                     <span class="token punctuation">&#123;</span><span class="token literal-property property">jsescOption</span><span class="token operator">:</span> <span class="token punctuation">&#123;</span><span class="token literal-property property">minimal</span><span class="token operator">:</span> <span class="token boolean">true</span><span class="token punctuation">&#125;</span><span class="token punctuation">&#125;</span>
+                    <span class="token punctuation">)</span><span class="token punctuation">.</span>code<span class="token punctuation">;</span>  <span class="token comment">//将AST转换成JS</span>
+
+
+fs<span class="token punctuation">.</span><span class="token function">writeFile</span><span class="token punctuation">(</span>output_File<span class="token punctuation">,</span> Code<span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token parameter">err</span><span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">&#123;</span>
+<span class="token punctuation">&#125;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+
+    </div>
+
+    
+    
+    
+      <div>
+      <p id="div-border-left-red">
+      <span>
+      <b>本文地址：</b><a href="/2022/10/24/%E6%9E%81%E9%AA%8C%E9%AA%8C%E8%AF%81%E7%A0%81AST%E5%A4%84%E7%90%86%E6%96%B9%E6%A1%88/" title="极验验证码AST处理方案">https://liangliang0107.github.io/2022/10/24/%E6%9E%81%E9%AA%8C%E9%AA%8C%E8%AF%81%E7%A0%81AST%E5%A4%84%E7%90%86%E6%96%B9%E6%A1%88/</a><br/><b>转载请注明出处，谢谢！</b>
+      </span>
+    </p>
+</div>
+
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/10/21/JavaScript-AST%E8%AF%AD%E6%B3%95%E6%A0%91-%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" rel="prev" title="JavaScript AST语法树 学习笔记">
+      <i class="fa fa-chevron-left"></i> JavaScript AST语法树 学习笔记
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9E%81%E9%AA%8C%E9%AA%8C%E8%AF%81%E7%A0%81JS%E6%B7%B7%E6%B7%86%E5%A4%84%E7%90%86%E6%96%B9%E6%A1%88"><span class="nav-number">1.</span> <span class="nav-text">极验验证码JS混淆处理方案</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E5%9F%BA%E7%A1%80%E5%B7%A5%E4%BD%9C"><span class="nav-number">1.1.</span> <span class="nav-text">1.  基础工作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E8%BF%98%E5%8E%9F%E5%AD%97%E7%AC%A6%E4%B8%B2%E6%B7%B7%E6%B7%86"><span class="nav-number">1.2.</span> <span class="nav-text">2. 还原字符串混淆</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E8%BF%98%E5%8E%9F%E6%95%B0%E7%BB%84%E6%B7%B7%E6%B7%86"><span class="nav-number">1.3.</span> <span class="nav-text">3. 还原数组混淆</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E6%95%B4%E4%BD%93%E8%BF%98%E5%8E%9F%E6%B5%81%E7%A8%8B"><span class="nav-number">1.4.</span> <span class="nav-text">4. 整体还原流程</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">liangliang</p>
+  <div class="site-description" itemprop="description">liangliang个人站，主要涉及前端知识共享、实践教程、前沿技术共同学习等方面</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">3</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL0xpYW5nbGlhbmcwMTA3" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Liangliang0107"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/2035776757@qq.com" title="E-Mail → 2035776757@qq.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="fa fa-link fa-fw"></i>
+      友情链接
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9tYWluMW8uZ2l0aHViLmlvLw==" title="https:&#x2F;&#x2F;main1o.github.io&#x2F;">main1o</span>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="snowflake-o"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">liangliang</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+  <style>
+    .copy-btn {
+      display: inline-block;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 20px;
+      color: #333;
+      white-space: nowrap;
+      vertical-align: middle;
+      cursor: pointer;
+      background-color: #eee;
+      background-image: linear-gradient(#fcfcfc, #eee);
+      border: 1px solid #d5d5d5;
+      border-radius: 3px;
+      user-select: none;
+      outline: 0;
+    }
+
+    .highlight-wrap .copy-btn {
+      transition: opacity .3s ease-in-out;
+      opacity: 0;
+      padding: 2px 6px;
+      position: absolute;
+      right: 4px;
+      top: 8px;
+    }
+
+    .highlight-wrap:hover .copy-btn,
+    .highlight-wrap .copy-btn:focus {
+      opacity: 1
+    }
+
+    .highlight-wrap {
+      position: relative;
+    }
+  </style>
+  
+  <script>
+    $('.highlight').each(function (i, e) {
+      var $wrap = $('<div>').addClass('highlight-wrap')
+      $(e).after($wrap)
+      $wrap.append($('<button>').addClass('copy-btn').append('post.copy_button').on('click', function (e) {
+        var code = $(this).parent().find('.code').find('.line').map(function (i, e) {
+          return $(e).text()
+        }).toArray().join('\n')
+        var ta = document.createElement('textarea')
+        document.body.appendChild(ta)
+        ta.style.position = 'absolute'
+        ta.style.top = '0px'
+        ta.style.left = '0px'
+        ta.value = code
+        ta.select()
+        ta.focus()
+        var result = document.execCommand('copy')
+        document.body.removeChild(ta)
+        
+          if(result)$(this).text('post.copy_success')
+          else $(this).text('post.copy_failure')
+        
+        $(this).blur()
+      })).on('mouseleave', function (e) {
+        var $b = $(this).find('.copy-btn')
+        setTimeout(function () {
+          $b.text('post.copy_button')
+        }, 300)
+      }).append(e)
+    })
+  </script>
+
+
+</body>
+
+</script>
+
+
+
+</html>
+
